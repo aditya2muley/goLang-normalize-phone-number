@@ -33,7 +33,31 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	db.Close()
+	dbInfo = fmt.Sprintf("%s dbname=%s", dbInfo, dbName)
+	db, err = sql.Open("postgres", dbInfo)
+	if err != nil {
+		panic(err)
+	}
+	err = createTable(db)
+	if err != nil {
+		panic(err)
+	}
 	defer db.Close()
+}
+
+func createTable(db *sql.DB) error {
+	statement := `
+		CREATE TABLE IF NOT EXISTS phone_numbers(
+			id SERIAL,
+			number VARCHAR(255)
+		)
+	`
+	_, err := db.Exec(statement)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func createDB(db *sql.DB, dbName string) error {
