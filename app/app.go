@@ -22,27 +22,25 @@ func normalizePhoneNumber(number string) string {
 	return str
 }
 
+func checkError(err error) error {
+	if err != nil {
+		panic(err)
+	}
+	return nil
+}
 func main() {
 	dbInfo := fmt.Sprintf("user=%s password=%d host=%s port=%d sslmode=disable", username, password, host, port)
 	db, err := sql.Open("postgres", dbInfo)
-	if err != nil {
-		panic(err)
-	}
+	checkError(err)
 	fmt.Println(dbInfo)
 	err = resetDB(db, dbName)
-	if err != nil {
-		panic(err)
-	}
+	checkError(err)
 	db.Close()
 	dbInfo = fmt.Sprintf("%s dbname=%s", dbInfo, dbName)
 	db, err = sql.Open("postgres", dbInfo)
-	if err != nil {
-		panic(err)
-	}
+	checkError(err)
 	err = createTable(db)
-	if err != nil {
-		panic(err)
-	}
+	checkError(err)
 	defer db.Close()
 }
 
@@ -62,16 +60,12 @@ func createTable(db *sql.DB) error {
 
 func createDB(db *sql.DB, dbName string) error {
 	_, err := db.Exec("CREATE DATABASE " + dbName)
-	if err != nil {
-		return err
-	}
+	checkError(err)
 	return nil
 }
 
 func resetDB(db *sql.DB, dbName string) error {
 	_, err := db.Exec("DROP DATABASE IF EXISTS " + dbName)
-	if err != nil {
-		return err
-	}
+	checkError(err)
 	return createDB(db, dbName)
 }
