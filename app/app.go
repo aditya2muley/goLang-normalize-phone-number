@@ -36,27 +36,74 @@ func checkError(err error) error {
 
 func main() {
 	dbInfo := fmt.Sprintf("user=%s password=%d host=%s port=%d sslmode=disable", username, password, host, port)
-	db, err := sql.Open("postgres", dbInfo)
-	checkError(err)
+	// db, err := sql.Open("postgres", dbInfo)
+	// checkError(err)
 	// err = resetDB(db, dbName)
 	// checkError(err)
-	db.Close()
+	// db.Close()
 	dbInfo = fmt.Sprintf("%s dbname=%s", dbInfo, dbName)
-	db, err = sql.Open("postgres", dbInfo)
+	db, err := sql.Open("postgres", dbInfo)
 	checkError(err)
-	err = createTable(db)
+	// err = createTable(db)
+	// checkError(err)
+	// numbers := []string{"1234567890", "123 456 7891", "123 456 7892", "123 456-7893", "123-456-7894", "123-456-7890", "1234567892", "123-456-7892"}
+	// for _, number := range numbers {
+	// 	_, err := insertRow(db, number)
+	// 	checkError(err)
+	// }
+	number_list, err := viewAllRecord(db)
 	checkError(err)
-	numbers := []string{"1234567890", "123 456 7891", "123 456 7892", "123 456-7893", "123-456-7894", "123-456-7890", "1234567892", "123-456-7892"}
-	for _, number := range numbers {
-		_, err := insertRow(db, number)
-		checkError(err)
+	for _, ph := range number_list {
+		number := normalizePhoneNumber(ph.number)
+		if number != ph.number {
+			existing, err := getPhoneRecord(db, number)
+			checkError(err)
+			if existing != nil {
+				checkError(deleteRecord(db, existing))
+				ph.number = number
+				checkError(updateRecord(db, &ph))
+			} else {
+				ph.number = number
+				checkError(updateRecord(db, &ph))
+			}
+		} else {
+			fmt.Println("No changes required")
+		}
 	}
-	data, err := viewAllRecord(db)
-	checkError(err)
-	data, err = viewRecord(db, 1)
-	checkError(err)
-	fmt.Printf("%+v", data)
+	number_list, err = viewAllRecord(db)
+	fmt.Println(number_list)
+	// data, err = viewRecord(db, 1)
+	// checkError(err)
+
 	defer db.Close()
+}
+
+func getPhoneRecord(db *sql.DB, number string) (*phone, error) {
+	var ph phone
+	statement := `SELECT * FROM phone_numbers where number = $1`
+	err := db.QueryRow(statement, number).Scan(&ph.id, &ph.number)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		} else {
+			return nil, err
+		}
+	}
+	return &ph, nil
+}
+
+func updateRecord(db *sql.DB, ph *phone) error {
+	fmt.Println(ph)
+	fmt.Println("))DDDDDDD")
+	statement := `UPDATE phone_numbers SET number =$2 WHERE ID=$1`
+	_, err := db.Exec(statement, ph.id, ph.number)
+	return err
+}
+
+func deleteRecord(db *sql.DB, ph *phone) error {
+	statement := `DELETE FROM phone_numbers WHERE ID=$1`
+	_, err := db.Exec(statement, ph.id)
+	return err
 }
 
 func viewAllRecord(db *sql.DB) ([]phone, error) {
